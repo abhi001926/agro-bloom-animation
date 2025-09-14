@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrendingUp, BarChart3, MapPin } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -54,6 +56,40 @@ export default function CropPricesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Market Insights Section */}
+      <div className="grid gap-6 mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Kerala Market Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <BarChart3 className="h-4 w-4" />
+              <AlertDescription>
+                <strong>High-Value Crops:</strong> Kerala's latest prices are highest for perennial/plantation and processed crops (pepper, coconut oil, coffee), which generally signals strong demand/value density.
+              </AlertDescription>
+            </Alert>
+            
+            <Alert>
+              <MapPin className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Regional Variations:</strong> The heatmap shows substantial cross-state variation for many fruits/vegetables; plantation crops stand out where they're grown (e.g., Kerala for pepper/coconut derivatives).
+              </AlertDescription>
+            </Alert>
+            
+            <Alert>
+              <TrendingUp className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Market Position:</strong> Kerala's overall average modal price (latest per commodity) is currently among the highest across the listed states, hinting at tight supply or higher quality mix.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

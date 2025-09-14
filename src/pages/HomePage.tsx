@@ -57,7 +57,7 @@ const HomePage = () => {
         
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4 animate-slide-up">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
-            Smart Agriculture
+            DIGITAL KRISHI
             <span className="block text-3xl md:text-5xl mt-2 text-accent-foreground">
               for Modern Farmers
             </span>

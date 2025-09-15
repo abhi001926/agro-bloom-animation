@@ -120,7 +120,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "Soil Acidity",
         message: `pH ${data.ph} is acidic. Apply lime to improve pH for better crop growth`,
-        color: "text-yellow-600"
+        color: "text-destructive"
       });
     } else if (data.ph > 7.5) {
       recommendations.push({
@@ -128,7 +128,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "Soil Alkalinity",
         message: `pH ${data.ph} is alkaline. Consider organic matter addition`,
-        color: "text-yellow-600"
+        color: "text-destructive"
       });
     } else {
       recommendations.push({
@@ -136,7 +136,7 @@ const SoilDataPage = () => {
         icon: CheckCircle,
         title: "pH Balance",
         message: "pH levels are suitable for most crops",
-        color: "text-green-600"
+        color: "text-primary"
       });
     }
 
@@ -147,7 +147,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "Nitrogen Deficiency",
         message: "Apply organic fertilizers or green manure to boost nitrogen",
-        color: "text-red-600"
+        color: "text-destructive"
       });
     } else if (data.nitrogen > 60) {
       recommendations.push({
@@ -155,7 +155,7 @@ const SoilDataPage = () => {
         icon: CheckCircle,
         title: "Good Nitrogen Levels",
         message: "Nitrogen content is adequate for healthy crop growth",
-        color: "text-green-600"
+        color: "text-primary"
       });
     } else {
       recommendations.push({
@@ -163,7 +163,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "Moderate Nitrogen",
         message: "Consider supplemental nitrogen application during peak growth",
-        color: "text-yellow-600"
+        color: "text-muted-foreground"
       });
     }
 
@@ -174,7 +174,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "High Moisture Content",
         message: "Ensure proper drainage to prevent waterlogging",
-        color: "text-yellow-600"
+        color: "text-muted-foreground"
       });
     } else if (data.moisture < 50) {
       recommendations.push({
@@ -182,7 +182,7 @@ const SoilDataPage = () => {
         icon: AlertCircle,
         title: "Low Moisture",
         message: "Increase irrigation frequency during dry periods",
-        color: "text-red-600"
+        color: "text-destructive"
       });
     } else {
       recommendations.push({
@@ -190,7 +190,7 @@ const SoilDataPage = () => {
         icon: CheckCircle,
         title: "Optimal Moisture",
         message: "Soil moisture is ideal for current weather conditions",
-        color: "text-green-600"
+        color: "text-primary"
       });
     }
 
@@ -213,28 +213,28 @@ const SoilDataPage = () => {
   };
 
   const getNutrientStatus = (value: number) => {
-    if (value > 60) return { status: "High", color: "text-green-600" };
-    if (value > 30) return { status: "Moderate", color: "text-yellow-600" };
-    return { status: "Low", color: "text-red-600" };
+    if (value > 60) return { status: "High", color: "text-primary" };
+    if (value > 30) return { status: "Moderate", color: "text-muted-foreground" };
+    return { status: "Low", color: "text-destructive" };
   };
 
   return (
-    <div className="min-h-screen bg-gradient-earth relative">
+    <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
       <FloatingIcons />
       
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="animate-slide-up">
-          <h1 className="text-4xl font-bold text-center mb-2 text-white">
+          <h1 className="text-4xl font-bold text-center mb-2 text-primary-foreground drop-shadow-lg">
             Kerala Soil Data Monitoring
           </h1>
-          <p className="text-center text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-center text-primary-foreground/90 mb-8 max-w-2xl mx-auto text-lg">
             Real-time soil analysis across Kerala districts featuring authentic data from laterite, alluvial, and hill soils
           </p>
 
-          <Card className="mb-8 shadow-floating bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
+          <Card className="mb-8 shadow-floating bg-card/95 backdrop-blur-sm border-primary/20">
+            <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-primary-foreground">
+                <MapPin className="h-5 w-5" />
                 Kerala District Soil Monitoring
               </CardTitle>
             </CardHeader>
@@ -243,9 +243,13 @@ const SoilDataPage = () => {
                 {fields.map((field) => (
                   <Button
                     key={field.id}
-                    variant={selectedField === field.id ? "default" : "outline"}
+                    variant={selectedField === field.id ? "default" : "secondary"}
                     onClick={() => handleFieldChange(field.id)}
-                    className="transition-smooth"
+                    className={`transition-smooth ${
+                      selectedField === field.id 
+                        ? "shadow-glow bg-primary hover:bg-primary/90" 
+                        : "hover:bg-secondary/80 border-primary/30"
+                    }`}
                   >
                     {field.name}
                   </Button>
@@ -253,7 +257,7 @@ const SoilDataPage = () => {
               </div>
               
               {/* Soil Information Panel */}
-              <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid md:grid-cols-2 gap-4 p-4 bg-gradient-earth rounded-lg border border-primary/20">
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground">District: <span className="font-medium text-foreground">{soilData.district}</span></div>
                   <div className="text-sm text-muted-foreground">Soil Type: <span className="font-medium text-foreground">{soilData.soilType}</span></div>
@@ -321,19 +325,19 @@ const SoilDataPage = () => {
           </div>
 
           {/* Nutrient Levels */}
-          <Card className="mb-8 shadow-floating bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sprout className="h-5 w-5 text-primary" />
+          <Card className="mb-8 shadow-floating bg-card/95 backdrop-blur-sm border-primary/20">
+            <CardHeader className="bg-gradient-sky text-accent-foreground rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-accent-foreground">
+                <Sprout className="h-5 w-5" />
                 Nutrient Levels
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {[
-                  { name: "Nitrogen (N)", value: soilData.nitrogen, color: "bg-blue-500" },
-                  { name: "Phosphorus (P)", value: soilData.phosphorus, color: "bg-red-500" },
-                  { name: "Potassium (K)", value: soilData.potassium, color: "bg-green-500" }
+                  { name: "Nitrogen (N)", value: soilData.nitrogen, color: "bg-accent" },
+                  { name: "Phosphorus (P)", value: soilData.phosphorus, color: "bg-destructive" },
+                  { name: "Potassium (K)", value: soilData.potassium, color: "bg-primary" }
                 ].map((nutrient, index) => {
                   const status = getNutrientStatus(nutrient.value);
                   return (
@@ -353,16 +357,16 @@ const SoilDataPage = () => {
           </Card>
 
           {/* Recommendations */}
-          <Card className="shadow-floating bg-white/90 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Soil Health Recommendations</CardTitle>
+          <Card className="shadow-floating bg-card/95 backdrop-blur-sm border-primary/20">
+            <CardHeader className="bg-gradient-earth text-secondary-foreground rounded-t-lg">
+              <CardTitle className="text-secondary-foreground">Soil Health Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recommendations.map((rec, index) => {
                   const Icon = rec.icon;
                   return (
-                    <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 animate-slide-up"
+                    <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-muted/80 border border-primary/10 animate-slide-up shadow-card"
                          style={{ animationDelay: `${index * 0.1}s` }}>
                       <Icon className={`h-5 w-5 mt-0.5 ${rec.color}`} />
                       <div>

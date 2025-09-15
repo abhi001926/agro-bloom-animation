@@ -33,7 +33,7 @@ const HomePage = () => {
       description: "Get answers to your agricultural questions from experts",
       icon: MessageSquare,
       color: "bg-gradient-primary",
-      link: "/query"
+      link: "/escalation"
     },
   ];
 
@@ -71,7 +71,7 @@ const HomePage = () => {
                 Get Started
               </Button>
             </Link>
-            <Link to="/query">
+            <Link to="/escalation">
               <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary px-8 py-6 text-lg transition-spring hover:scale-105">
                 Ask Expert
               </Button>

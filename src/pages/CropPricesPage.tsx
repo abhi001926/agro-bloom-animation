@@ -1,45 +1,80 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, BarChart3, MapPin, RefreshCw, Download, Calendar, IndianRupee, Activity, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, MapPin, RefreshCw, Download, Calendar, IndianRupee, Activity, AlertTriangle, Loader2 } from "lucide-react";
 import keralaCommoditiesChart from "@/assets/kerala-commodities-chart.jpg";
 import statewisePricesHeatmap from "@/assets/statewise-prices-heatmap.jpg";
 import averagePricesByState from "@/assets/average-prices-by-state.jpg";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { fetchCropPrices, AVAILABLE_COMMODITIES, type CropPriceData } from "@/services/cropPriceService";
+import { toast } from "sonner";
+
+// Kerala-focused commodities available in data.gov.in
+const KERALA_COMMODITIES = ["Pepper", "Coconut", "Cardamom", "Rice", "Onion", "Potato", "Tomato"];
 
 export default function CropPricesPage() {
-  const [selectedTimeframe, setSelectedTimeframe] = useState("7d");
-  const [selectedCommodity, setSelectedCommodity] = useState("all");
+  const [selectedCommodity, setSelectedCommodity] = useState("Pepper");
+  const [selectedAgg, setSelectedAgg] = useState<"daily" | "monthly" | "yearly">("monthly");
+  const [cropData, setCropData] = useState<CropPriceData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for advanced analytics
-  const priceData = [
-    { date: "2025-09-07", wheat: 2800, rice: 3200, maize: 2400, soybean: 4200 },
-    { date: "2025-09-08", wheat: 2850, rice: 3180, maize: 2450, soybean: 4250 },
-    { date: "2025-09-09", wheat: 2820, rice: 3220, maize: 2420, soybean: 4180 },
-    { date: "2025-09-10", wheat: 2880, rice: 3250, maize: 2480, soybean: 4300 },
-    { date: "2025-09-11", wheat: 2860, rice: 3190, maize: 2460, soybean: 4220 },
-    { date: "2025-09-12", wheat: 2900, rice: 3280, maize: 2500, soybean: 4380 },
-    { date: "2025-09-13", wheat: 2920, rice: 3300, maize: 2520, soybean: 4400 },
-  ];
+  const loadCropData = async (commodity: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchCropPrices(commodity, selectedAgg);
+      setCropData(data);
+      toast.success(`Loaded live data for ${commodity}`);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to load data";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const marketMetrics = [
-    { name: "Wheat", current: 2920, change: +4.28, volume: "12.5K MT", trend: "up", color: "#10b981" },
-    { name: "Rice", current: 3300, change: +3.12, volume: "8.2K MT", trend: "up", color: "#3b82f6" },
-    { name: "Maize", current: 2520, change: +5.00, volume: "15.8K MT", trend: "up", color: "#f59e0b" },
-    { name: "Soybean", current: 4400, change: +4.76, volume: "6.1K MT", trend: "up", color: "#8b5cf6" },
-  ];
+  useEffect(() => {
+    loadCropData(selectedCommodity);
+  }, [selectedCommodity, selectedAgg]);
 
-  const topPerformers = [
-    { crop: "Pepper", price: 62000, change: +12.5, state: "Kerala" },
-    { crop: "Coconut Oil", price: 48000, change: +8.3, state: "Kerala" },
-    { crop: "Coffee", price: 22000, change: +6.7, state: "Karnataka" },
-    { crop: "Cardamom", price: 35000, change: +15.2, state: "Kerala" },
-  ];
+  const handleRefresh = () => {
+    loadCropData(selectedCommodity);
+  };
 
+  const handleCommodityChange = (value: string) => {
+    setSelectedCommodity(value);
+  };
+
+  // Calculate metrics from real data
+  const calculateMetrics = () => {
+    if (!cropData || cropData.timeseries.length === 0) return null;
+
+    const data = cropData.timeseries;
+    const latest = data[data.length - 1];
+    const previous = data[data.length - 2];
+    
+    const currentPrice = latest?.avg || 0;
+    const previousPrice = previous?.avg || currentPrice;
+    const change = previousPrice > 0 
+      ? ((currentPrice - previousPrice) / previousPrice) * 100 
+      : 0;
+
+    return {
+      current: currentPrice,
+      change: Number(change.toFixed(2)),
+      trend: change >= 0 ? "up" : "down",
+      samples: latest?.samples || 0,
+      period: latest?.key || ""
+    };
+  };
+
+  const metrics = calculateMetrics();
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'];
 
   return (
@@ -49,50 +84,133 @@ export default function CropPricesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Crop Market Analytics
+              Kerala Crop Market - Live Prices
             </h1>
-            <p className="text-muted-foreground mt-2">Real-time insights and advanced market analysis</p>
+            <p className="text-muted-foreground mt-2">Real-time data from data.gov.in AgMark API</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="hover:scale-105 transition-transform">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hover:scale-105 transition-transform"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
-            </Button>
-            <Button variant="outline" size="sm" className="hover:scale-105 transition-transform">
-              <Download className="h-4 w-4 mr-2" />
-              Export
             </Button>
           </div>
         </div>
+
+        {/* Commodity Selector */}
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <label className="text-sm font-medium">Select Commodity:</label>
+          <Select value={selectedCommodity} onValueChange={handleCommodityChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {KERALA_COMMODITIES.map(commodity => (
+                <SelectItem key={commodity} value={commodity}>
+                  {commodity}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedAgg} onValueChange={(v: any) => setSelectedAgg(v)}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {cropData && (
+            <Badge variant="outline" className="text-sm">
+              {cropData.timeseries.length} data points
+            </Badge>
+          )}
+        </div>
       </div>
 
-      {/* Market Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {marketMetrics.map((metric, index) => (
-          <Card key={metric.name} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 hover:scale-105 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+      {/* Loading & Error States */}
+      {loading && (
+        <Card className="mb-8 border-0 shadow-lg">
+          <CardContent className="p-12 flex flex-col items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-lg text-muted-foreground">Loading live market data...</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Alert className="mb-8 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-950/20">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription>
+            <strong>Error:</strong> {error}
+            <br />
+            <span className="text-sm">Make sure backend is running with valid API key.</span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Market Overview Card */}
+      {metrics && !loading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 hover:scale-105 transition-all duration-300 animate-slide-up">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm text-muted-foreground">{metric.name}</h3>
-                <Badge variant={metric.trend === "up" ? "default" : "secondary"} className="animate-pulse-glow">
-                  {metric.trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <h3 className="font-semibold text-sm text-muted-foreground">{selectedCommodity}</h3>
+                <Badge variant={metrics.trend === "up" ? "default" : "secondary"}>
+                  {metrics.trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 </Badge>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <IndianRupee className="h-5 w-5 text-primary" />
-                  <span className="text-2xl font-bold">{metric.current.toLocaleString()}</span>
+                  <span className="text-2xl font-bold">₹{metrics.current.toLocaleString()}/Quintal</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className={`flex items-center gap-1 ${metric.change > 0 ? "text-green-600" : "text-red-600"}`}>
-                    {metric.change > 0 ? "+" : ""}{metric.change}%
+                  <span className={`flex items-center gap-1 ${metrics.change > 0 ? "text-green-600" : "text-red-600"}`}>
+                    {metrics.change > 0 ? "+" : ""}{metrics.change}%
                   </span>
-                  <span className="text-muted-foreground">{metric.volume}</span>
+                  <span className="text-muted-foreground">Latest Price</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 hover:scale-105 transition-all duration-300 animate-slide-up">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-4">Data Period</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <span className="text-2xl font-bold">{metrics.period}</span>
+                </div>
+                <p className="text-sm text-muted-foreground capitalize">{selectedAgg} Aggregation</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 hover:scale-105 transition-all duration-300 animate-slide-up">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-4">Market Samples</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  <span className="text-2xl font-bold">{metrics.samples}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Market Records</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4 bg-muted/50">
@@ -103,25 +221,35 @@ export default function CropPricesPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 border-0 shadow-lg">
+          {cropData && cropData.timeseries.length > 0 ? (
+            <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5 text-primary" />
-                  Price Movement (7 Days)
+                  {selectedCommodity} Price Trend - Live Data
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={priceData}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <AreaChart data={cropData.timeseries.map(d => ({
+                    period: d.key,
+                    price: d.avg,
+                    median: d.median
+                  }))}>
                     <defs>
-                      <linearGradient id="wheatGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis 
+                      dataKey="period" 
+                      tick={{ fontSize: 12 }} 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip 
                       contentStyle={{ 
@@ -130,67 +258,53 @@ export default function CropPricesPage() {
                         borderRadius: '8px', 
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
                       }}
-                      formatter={(value: any) => [`₹${value}`, 'Price']}
+                      formatter={(value: any) => [`₹${value}/Quintal`, 'Price']}
                     />
-                    <Area type="monotone" dataKey="wheat" stroke="#10b981" fillOpacity={1} fill="url(#wheatGradient)" strokeWidth={3} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="price" 
+                      stroke="#10b981" 
+                      fillOpacity={1} 
+                      fill="url(#priceGradient)" 
+                      strokeWidth={3}
+                      name="Average Price"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Top Performers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {topPerformers.map((item, index) => (
-                  <div key={item.crop} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors">
-                    <div>
-                      <p className="font-semibold">{item.crop}</p>
-                      <p className="text-sm text-muted-foreground">{item.state}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">₹{item.price.toLocaleString()}</p>
-                      <p className="text-sm text-green-600">+{item.change}%</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+          ) : (
+            <Alert>
+              <AlertDescription>No data available. Select a commodity to view prices.</AlertDescription>
+            </Alert>
+          )}
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-6">
-          <div className="grid gap-6">
+          {cropData && cropData.timeseries.length > 0 ? (
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    Multi-Commodity Price Comparison
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7d">7 Days</SelectItem>
-                        <SelectItem value="30d">30 Days</SelectItem>
-                        <SelectItem value="90d">90 Days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  {selectedCommodity} Detailed Price Analysis
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={priceData}>
+                  <BarChart data={cropData.timeseries.map(d => ({
+                    period: d.key,
+                    average: d.avg,
+                    median: d.median,
+                    samples: d.samples
+                  }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis 
+                      dataKey="period" 
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip 
                       contentStyle={{ 
@@ -199,17 +313,30 @@ export default function CropPricesPage() {
                         borderRadius: '8px', 
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
                       }}
-                      formatter={(value: any) => [`₹${value}`, 'Price']}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'samples') return [value, 'Market Samples'];
+                        return [`₹${value}/Quintal`, name === 'average' ? 'Average Price' : 'Median Price'];
+                      }}
                     />
-                    <Line type="monotone" dataKey="wheat" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', strokeWidth: 2 }} />
-                    <Line type="monotone" dataKey="rice" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2 }} />
-                    <Line type="monotone" dataKey="maize" stroke="#f59e0b" strokeWidth={3} dot={{ fill: '#f59e0b', strokeWidth: 2 }} />
-                    <Line type="monotone" dataKey="soybean" stroke="#8b5cf6" strokeWidth={3} dot={{ fill: '#8b5cf6', strokeWidth: 2 }} />
-                  </LineChart>
+                    <Bar dataKey="average" fill="#10b981" name="Average" />
+                    <Bar dataKey="median" fill="#3b82f6" name="Median" />
+                  </BarChart>
                 </ResponsiveContainer>
+                
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Data Source:</strong> data.gov.in AgMark API | 
+                    <strong> Aggregation:</strong> {selectedAgg.charAt(0).toUpperCase() + selectedAgg.slice(1)} | 
+                    <strong> Total Records:</strong> {cropData.timeseries.reduce((sum, d) => sum + (d.samples || 0), 0)}
+                  </p>
+                </div>
               </CardContent>
             </Card>
-          </div>
+          ) : (
+            <Alert>
+              <AlertDescription>No trend data available.</AlertDescription>
+            </Alert>
+          )}
         </TabsContent>
 
         <TabsContent value="analysis" className="space-y-6">

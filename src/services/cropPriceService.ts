@@ -3,8 +3,10 @@
 const BACKEND_URL = "http://localhost:5000";
 
 export interface PriceDataPoint {
+  key: string;
   period: string;
   avg: number;
+  median?: number;
   samples?: number;
 }
 

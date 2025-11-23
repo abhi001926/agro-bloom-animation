@@ -1,33 +1,40 @@
 # 🌾 Real Data Integration Guide
 
-This guide shows you how to connect your app to real data from data.gov.in.
+This guide shows you how to use real data from data.gov.in.
 
-## ✅ What's Already Working: Crop Prices
+## ✅ READY TO USE - Your API is Already Configured!
 
-The crop price data is **ready to use** with real data from data.gov.in!
+Your backend is **already configured** with your data.gov.in credentials:
+- **API Key**: `579b464db66ec23bdd00000143422fb1752f47de6649d5ec0dbdee64`
+- **Resource ID**: `35985678-0d79-46b4-9ed6-6f13308a1d24`
 
-### Setup Steps:
+### Quick Start (3 Steps)
 
-1. **Get your API key** from https://data.gov.in/
-   - Create an account (it's free)
-   - Get your API key from your account settings
+**1. Navigate to Backend**
+```bash
+cd backend
+```
 
-2. **Add your API key:**
-   - Go to `backend/.env.example`
-   - Rename it to `backend/.env`
-   - Replace `YOUR_API_KEY_HERE` with your actual API key:
-   ```
-   AGMARK_API_KEY=your-actual-api-key-here
-   ```
+**2. Install Dependencies** (first time only)
+```bash
+npm install
+```
 
-3. **Start the backend:**
-   ```bash
-   cd backend
-   npm install
-   node server.js
-   ```
+**3. Start the Server**
+```bash
+npm start
+```
 
-4. **That's it!** The crop prices page will now show real live data.
+You should see:
+```
+🌾 Agro backend running at http://localhost:5000
+```
+
+**4. View Live Data**
+- The Crop Prices page will now display real data from data.gov.in
+- Select different commodities (Pepper, Rice, Coconut, etc.)
+- Choose aggregation: Daily, Monthly, or Yearly
+- Data is cached for 24 hours for better performance
 
 ### Available Commodities:
 - Wheat, Rice, Onion, Potato, Tomato

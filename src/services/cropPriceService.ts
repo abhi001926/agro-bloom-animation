@@ -27,14 +27,32 @@ export async function fetchCropPrices(
 ): Promise<CropPriceData> {
   try {
     const response = await fetch(
-      `${BACKEND_URL}/api/crops/${encodeURIComponent(commodity)}?agg=${agg}`
+      `${BACKEND_URL}/api/crops/${encodeURIComponent(commodity)}?agg=${agg}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch crop prices: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch crop prices: ${response.statusText}`);
     }
     
     const data = await response.json();
+    
+    // Ensure data has the correct structure
+    if (!data.timeseries || !Array.isArray(data.timeseries)) {
+      console.warn("Invalid data structure received:", data);
+      return {
+        commodity: data.commodity || commodity,
+        agg: data.agg || agg,
+        timeseries: []
+      };
+    }
+    
     return data;
   } catch (error) {
     console.error("Error fetching crop prices:", error);

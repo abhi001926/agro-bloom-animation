@@ -16,7 +16,7 @@ export interface CropPriceData {
 
 // data.gov.in AgMarknet credentials (provided by you)
 const DATA_GOV_API_KEY =
-  "579b464db66ec23bdd00000143422fb1752f47de6649d5ec0dbdee64";
+  "579b464db66ec23bdd000001562b571ba6034b325dc0fd19701d8e7a";
 const DATA_GOV_RESOURCE_ID =
   "35985678-0d79-46b4-9ed6-6f13308a1d24";
 
@@ -194,7 +194,8 @@ export async function fetchCropPrices(
       limit: "1000"
     });
 
-    // Filter by commodity in API (same as backend service)
+    // Filter by Kerala and commodity in API (same as backend service)
+    params.append("filters[State]", "Kerala");
     params.append("filters[commodity]", commodity);
 
     const url = `${BASE_URL}?${params.toString()}`;

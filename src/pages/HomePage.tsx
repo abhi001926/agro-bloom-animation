@@ -72,7 +72,7 @@ const HomePage = () => {
               </Button>
             </Link>
             <Link to="/escalation">
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary px-8 py-6 text-lg transition-spring hover:scale-105">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg transition-spring hover:scale-105">
                 Ask Expert
               </Button>
             </Link>

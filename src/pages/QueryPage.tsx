@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,23 +6,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import FloatingIcons from "@/components/animations/FloatingIcons";
-import { 
-  MessageSquare, 
-  Send, 
-  User, 
-  Clock, 
-  CheckCircle, 
+import {
+  MessageSquare,
+  Send,
+  User,
+  Clock,
+  CheckCircle,
   Leaf,
   Users,
   BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
+import { db } from "@/firebase"; // <-- import Firebase DB
+import { collection, getDocs, addDoc,serverTimestamp} from "firebase/firestore";
+
+
 
 const QueryPage = () => {
   const [query, setQuery] = useState("");
   const [email, setEmail] = useState("");
+  const [faqs, setFaqs] = useState([]); // <-- dynamic data
 
-  const faqs = [
+  const dummyFaqs = [
     {
       question: "What's the best time to plant corn?",
       answer: "Plant corn when soil temperature reaches 60°F (15°C) and after the last frost date in your area.",
@@ -45,6 +50,28 @@ const QueryPage = () => {
     }
   ];
 
+
+    // Fetch FAQs from Firestore
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "faq")); // <-- your Firestore collection
+        if (!querySnapshot.empty) {
+          const data = querySnapshot.docs.map(doc => doc.data());
+          setFaqs(data);
+        } else {
+          setFaqs(dummyFaqs); // fallback if empty
+        }
+      } catch (error) {
+        console.error("Error fetching FAQs:", error);
+        setFaqs(dummyFaqs); // fallback if offline/error
+      }
+    };
+
+    fetchFaqs();
+  }, []);
+
+
   const experts = [
     {
       name: "Dr. Sarah Johnson",
@@ -56,7 +83,7 @@ const QueryPage = () => {
     {
       name: "Prof. Michael Chen",
       specialty: "Soil Health",
-      experience: "20 years", 
+      experience: "20 years",
       rating: 4.8,
       responseTime: "< 4 hours"
     },
@@ -78,7 +105,7 @@ const QueryPage = () => {
       toast.error("Please enter your email");
       return;
     }
-    
+
     toast.success("Your question has been submitted! An expert will respond soon.");
     setQuery("");
     setEmail("");
@@ -87,7 +114,7 @@ const QueryPage = () => {
   return (
     <div className="min-h-screen bg-gradient-primary relative">
       <FloatingIcons />
-      
+
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="animate-slide-up">
           <h1 className="text-4xl font-bold text-center mb-8 text-white">
@@ -121,7 +148,7 @@ const QueryPage = () => {
                   rows={4}
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleSubmitQuery}
                 className="w-full bg-primary hover:bg-primary/90 transition-smooth"
               >

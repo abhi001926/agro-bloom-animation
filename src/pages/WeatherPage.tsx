@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 
 const API_KEY = "R42pcChSst2JGmdQY94ng5ZV4aR8wLwV"; // 🔑 replace with your key
-const DEFAULT_LOCATION = "Delhi"; // 🌍 default city
+const DEFAULT_LOCATION = "kerela"; // 🌍 default city
 
 // 🔹 Map Tomorrow.io weather codes → readable text + icon
 const getConditionAndIcon = (code: number) => {

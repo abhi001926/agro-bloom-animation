@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle, Clock, MessageSquare, User, Calendar, Filter, Search, Phone, Mail, Send, BarChart3, TrendingUp, Users, AlertCircle, Video, Headphones } from "lucide-react";
 
+// 🔥 Add this at the TOP of your file
+import { doc, updateDoc, collection, onSnapshot,increment } from "firebase/firestore";
+
+import { db } from "@/firebase"; // your firebase.js config
+
+
 const EscalationSystemPage = () => {
   const [selectedQuery, setSelectedQuery] = useState<any>(null);
   const [responseText, setResponseText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [responseMethod, setResponseMethod] = useState("message");
+  const [queries, setQueries] = useState<any[]>([]);
 
   // Mock data for queries from chatbot
-  const queries = [
+  const dummyQueries = [
     {
       id: "Q001",
       farmerName: "Rajesh Kumar",
@@ -36,7 +43,7 @@ const EscalationSystemPage = () => {
       urgencyLevel: "High"
     },
     {
-      id: "Q002", 
+      id: "Q002",
       farmerName: "Priya Sharma",
       location: "Maharashtra",
       query: "Cotton plants are wilting despite regular watering. AI said it's overwatering but soil feels dry. Please help urgently as crop is ready for harvest and I'm losing money every day.",
@@ -45,7 +52,7 @@ const EscalationSystemPage = () => {
       status: "in-progress",
       priority: "urgent",
       category: "irrigation",
-      phone: "+91 87654 32109", 
+      phone: "+91 87654 32109",
       email: "priya.cotton@yahoo.com",
       farmSize: "8 acres",
       cropType: "Cotton",
@@ -105,21 +112,109 @@ const EscalationSystemPage = () => {
     }
   ];
 
+    useEffect(() => {
+  if (!navigator.onLine) {
+    console.warn("Offline mode: Using dummy data");
+    setQueries(dummyQueries);
+    return;
+  }
+
+  const unsub = onSnapshot(
+    collection(db, "escalations"),
+    (snapshot) => {
+      if (snapshot.empty) {
+        console.log("No Firestore data → using dummy fallback");
+        setQueries(dummyQueries);
+        return;
+      }
+
+      const liveData = snapshot.docs.map((doc) => {
+        const data: any = doc.data();
+
+        // normalize timestamp -> ISO string
+        let tsIso = "";
+        if (data.timestamp) {
+          // Firestore Timestamp -> has toDate()
+          if (typeof data.timestamp.toDate === "function") {
+            tsIso = data.timestamp.toDate().toISOString();
+          } else {
+            // maybe already a string or number
+            try {
+              tsIso = new Date(data.timestamp).toISOString();
+            } catch {
+              tsIso = new Date().toISOString();
+            }
+          }
+        }
+
+        return {
+          id: doc.id,
+          // prefer friendly names, fallback to alternate keys used by the Flutter app
+          farmerName: data.farmerName || data.user_name || data.sender || "",
+          query: data.query || data.user_message || data.text || "",
+          chatbotResponse: data.chatbotResponse || data.bot_reply || data.bot_response || "",
+          timestamp: tsIso || new Date().toISOString(),
+          status: data.status || data.bot_status || "pending",
+          priority: data.priority || "medium",
+          category: data.category || data.topic || "general",
+          phone: data.phone || "",
+          email: data.email || "",
+          farmSize: data.farmSize || data.farm_size || "",
+          cropType: data.cropType || data.crop || "",
+          satisfactionRating: typeof data.satisfactionRating === "number" ? data.satisfactionRating : (data.satisfied ? 5 : 0),
+          urgencyLevel: data.urgencyLevel || data.priorityLevel || ""
+        };
+      });
+
+      console.log("Loaded escalations from Firestore:", liveData);
+      setQueries(liveData);
+    },
+    (err) => {
+      console.error("Firestore error → using dummy fallback", err);
+      setQueries(dummyQueries);
+    }
+  );
+
+  return () => unsub();
+}, []);
+
+
   const dashboardStats = [
     { title: "Total Queries", value: queries.length, icon: MessageSquare, color: "bg-blue-500" },
     { title: "Pending", value: queries.filter(q => q.status === "pending").length, icon: Clock, color: "bg-yellow-500" },
     { title: "In Progress", value: queries.filter(q => q.status === "in-progress").length, icon: AlertCircle, color: "bg-orange-500" },
     { title: "Resolved", value: queries.filter(q => q.status === "resolved").length, icon: CheckCircle, color: "bg-green-500" },
   ];
+const safeLower = (v: any) => (v ? String(v).toLowerCase() : "");
+//   const safe = (val) => (val ? val.toString().toLowerCase() : "");
+//  const filteredQueries = queries.filter(query => {
+//   const farmerName = query.farmerName?.toLowerCase() || "";
+//   const q = query.query?.toLowerCase() || "";
+//   const location = query.location?.toLowerCase() || "";
+//   const crop = query.cropType?.toLowerCase() || "";
+//   const search = searchTerm?.toLowerCase() || "";
+const filteredQueries = queries.filter(query => {
+  const search = safeLower(searchTerm);
 
-  const filteredQueries = queries.filter(query => {
-    const matchesSearch = query.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.query.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.cropType.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || query.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const matchesSearch =
+    safeLower(query.farmerName).includes(search) ||
+    safeLower(query.query).includes(search) ||
+    safeLower(query.location).includes(search) ||
+    safeLower(query.cropType).includes(search) ||
+    safeLower(query.chatbotResponse).includes(search);
+
+  const matchesFilter = filterStatus === "all" || safeLower(query.status) === safeLower(filterStatus);
+
+  // const matchesSearch =
+  //   safe(query.farmerName).includes(searchTerm.toLowerCase()) ||
+  //   safe(query.user_message).includes(searchTerm.toLowerCase()) ||
+  //   safe(query.bot_reply).includes(searchTerm.toLowerCase()) ||
+  //   safe(query.reason).includes(searchTerm.toLowerCase());
+  // const matchesFilter =
+  //   filterStatus === "all" || safe(query.status) === filterStatus;
+
+  return matchesSearch && matchesFilter;
+});
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,19 +234,53 @@ const EscalationSystemPage = () => {
     }
   };
 
-  const handleResponse = (method: string) => {
+
+  // 🔥 Add this at the TOP of your file
+
+const handleResponse = async (method: string) => {
+  if (!selectedQuery) {
+    alert("No query selected.");
+    return;
+  }
+
+  try {
     if (method === "call") {
-      // Mock call initiation
-      alert(`Initiating call to ${selectedQuery?.farmerName} at ${selectedQuery?.phone}`);
-    } else if (method === "video") {
-      // Mock video call initiation
-      alert(`Starting video consultation with ${selectedQuery?.farmerName}`);
-    } else {
-      // Send message response
-      alert(`Message sent to ${selectedQuery?.farmerName}: ${responseText}`);
-      setResponseText("");
+      alert(`Initiating call to ${selectedQuery.farmerName} at ${selectedQuery.phone}`);
+      return;
     }
-  };
+
+    if (method === "video") {
+      alert(`Starting video consultation with ${selectedQuery.farmerName}`);
+      return;
+    }
+
+    // ---------- MESSAGE RESPONSE ----------
+    if (!responseText.trim()) {
+      alert("Reply cannot be empty");
+      return;
+    }
+
+    // Firestore document reference
+    const queryRef = doc(db, "escalations", selectedQuery.id);
+
+    // Update the escalation with the response + mark resolved + increment count
+    await updateDoc(queryRef, {
+      officer_response: responseText.trim(),
+      status: "resolved",
+      resolvedAt: new Date(),
+      resolvedCount: increment(1),
+    });
+
+    alert(`Message sent to ${selectedQuery.farmerName}: ${responseText}`);
+
+    setResponseText("");
+  } catch (err) {
+    console.error("ERROR:", err);
+    alert("Error sending response. Try again.");
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
@@ -228,17 +357,17 @@ const EscalationSystemPage = () => {
               {queries.filter(q => q.status === "pending").length} Pending Review
             </Badge>
           </div>
-          
+
           {filteredQueries.map((query, index) => (
             <Card
               key={query.id}
               className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] border-l-4 animate-slide-up ${
-                selectedQuery?.id === query.id 
-                  ? "ring-2 ring-primary shadow-lg border-l-primary" 
-                  : query.priority === "urgent" 
-                    ? "border-l-red-500" 
-                    : query.priority === "high" 
-                      ? "border-l-orange-500" 
+                selectedQuery?.id === query.id
+                  ? "ring-2 ring-primary shadow-lg border-l-primary"
+                  : query.priority === "urgent"
+                    ? "border-l-red-500"
+                    : query.priority === "high"
+                      ? "border-l-orange-500"
                       : "border-l-blue-500"
               }`}
               style={{ animationDelay: `${index * 0.1}s` }}
@@ -284,7 +413,15 @@ const EscalationSystemPage = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(query.timestamp).toLocaleString()}
+                      {/* Safe date */}
+{(() => {
+  const d = new Date(query.timestamp || "");
+  return isNaN(d.getTime()) ? "Invalid Date" : d.toLocaleString();
+})()}
+
+{/* Safe replace for status */}
+{(query.status || "").toString().replace(/-/g, " ")}
+
                     </div>
                     <div className="flex items-center gap-1">
                       <BarChart3 className="h-3 w-3" />
@@ -310,7 +447,7 @@ const EscalationSystemPage = () => {
               </CardContent>
             </Card>
           ))}
-          
+
           {filteredQueries.length === 0 && (
             <Card className="border-dashed border-2">
               <CardContent className="p-12 text-center">
@@ -346,7 +483,7 @@ const EscalationSystemPage = () => {
                       <p className="text-muted-foreground">{selectedQuery.location}</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div className="space-y-3">
                       <div>
@@ -451,7 +588,7 @@ const EscalationSystemPage = () => {
                         Video
                       </TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="message" className="space-y-4 mt-6">
                       <div>
                         <label className="text-sm font-medium mb-2 block">Expert Response</label>
@@ -462,8 +599,8 @@ const EscalationSystemPage = () => {
                           className="min-h-[140px] resize-none"
                         />
                       </div>
-                      <Button 
-                        onClick={() => handleResponse("message")} 
+                      <Button
+                        onClick={() => handleResponse("message")}
                         className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
                         disabled={!responseText.trim()}
                       >
@@ -471,7 +608,7 @@ const EscalationSystemPage = () => {
                         Send Expert Response
                       </Button>
                     </TabsContent>
-                    
+
                     <TabsContent value="call" className="space-y-4 mt-6">
                       <div className="text-center p-8 border-2 border-dashed border-muted rounded-xl bg-gradient-to-br from-green-50 to-transparent dark:from-green-950/20">
                         <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -481,7 +618,7 @@ const EscalationSystemPage = () => {
                         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                           Initiate a direct voice call for immediate discussion and real-time guidance
                         </p>
-                        <Button 
+                        <Button
                           onClick={() => handleResponse("call")}
                           className="w-full h-12 bg-green-600 hover:bg-green-700"
                         >
@@ -490,7 +627,7 @@ const EscalationSystemPage = () => {
                         </Button>
                       </div>
                     </TabsContent>
-                    
+
                     <TabsContent value="video" className="space-y-4 mt-6">
                       <div className="text-center p-8 border-2 border-dashed border-muted rounded-xl bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20">
                         <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -500,7 +637,7 @@ const EscalationSystemPage = () => {
                         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                           Start a video call for visual crop inspection and detailed guidance with screen sharing
                         </p>
-                        <Button 
+                        <Button
                           onClick={() => handleResponse("video")}
                           className="w-full h-12 bg-blue-600 hover:bg-blue-700"
                         >

@@ -46,15 +46,15 @@ const HomePage = () => {
   return (
     <div className="min-h-screen relative">
       <FloatingIcons />
-      
+
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${heroImage})` }}
         />
         <div className="absolute inset-0 bg-gradient-hero opacity-80" />
-        
+
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4 animate-slide-up">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
             DIGITAL KRISHI
@@ -72,7 +72,7 @@ const HomePage = () => {
               </Button>
             </Link>
             <Link to="/escalation">
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary px-8 py-6 text-lg transition-spring hover:scale-105">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg transition-spring hover:scale-105">
                 Ask Expert
               </Button>
             </Link>
@@ -97,7 +97,7 @@ const HomePage = () => {
               const Icon = feature.icon;
               return (
                 <Link key={feature.title} to={feature.link}>
-                  <Card className={`${feature.color} border-0 text-white hover:scale-105 transition-spring cursor-pointer h-full animate-slide-up`} 
+                  <Card className={`${feature.color} border-0 text-white hover:scale-105 transition-spring cursor-pointer h-full animate-slide-up`}
                         style={{ animationDelay: `${index * 0.1}s` }}>
                     <CardHeader>
                       <Icon size={48} className="mb-4 animate-float" />

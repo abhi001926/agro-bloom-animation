@@ -43,11 +43,13 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
-            <Leaf size={28} className="animate-pulse-glow" />
-            <span className="bg-gradient-primary bg-clip-text text-transparent">
-              AgriTech
-            </span>
+          <Link to="/" className="flex items-center gap-2 font-bold text-xl">
+            <div className="flex items-center gap-2 bg-primary px-3 py-1.5 rounded-lg">
+              <Leaf size={24} className="text-primary-foreground" />
+              <span className="text-primary-foreground font-bold">
+                Digital Krishi
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

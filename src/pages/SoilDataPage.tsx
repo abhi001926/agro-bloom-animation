@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FloatingIcons from "@/components/animations/FloatingIcons";
+import KeralaSoilMap from "@/components/soil/KeralaSoilMap";
 import { 
   MapPin, 
   Sprout,
   Leaf,
   TrendingUp,
   Info,
-  ChevronRight
+  Map
 } from "lucide-react";
 
 // Kerala Districts with Soil Data 2025
@@ -236,15 +238,33 @@ const SoilDataPage = () => {
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="animate-slide-up">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-amber-600 via-green-600 to-emerald-600 bg-clip-text text-transparent">
               Kerala Soils & Crop Guide 2025
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Select a district to view soil types and recommended crops with efficiency ratings
+              Explore Kerala's diverse soil types and find the best crops for each region
             </p>
           </div>
 
+          {/* Tabs */}
+          <Tabs defaultValue="district" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+              <TabsTrigger value="district" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                District Guide
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex items-center gap-2">
+                <Map className="h-4 w-4" />
+                Soil Map
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="map">
+              <KeralaSoilMap />
+            </TabsContent>
+
+            <TabsContent value="district">
           {/* District Selection */}
           <Card className="mb-6 shadow-lg bg-white/95 border-0">
             <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg py-4">
@@ -394,6 +414,8 @@ const SoilDataPage = () => {
           <p className="text-center text-sm text-gray-500 mt-6">
             Data: Kerala State Land Use Board & Kerala Agricultural University (2025)
           </p>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

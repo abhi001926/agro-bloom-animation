@@ -13,7 +13,7 @@ const Navigation = () => {
     { name: "Weather", path: "/weather", icon: Cloud },
     { name: "Crop Prices", path: "/prices", icon: TrendingUp },
     { name: "Soil Data", path: "/soil", icon: MapPin },
-    { name: "Escalation", path: "/escalation", icon: ArrowUp },
+    { name: "Products", path: "/products", icon: Package },
   ];
 
   const NavLinks = ({ mobile = false }) => (

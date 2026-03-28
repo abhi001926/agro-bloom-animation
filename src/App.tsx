@@ -8,7 +8,7 @@ import HomePage from "./pages/HomePage";
 import WeatherPage from "./pages/WeatherPage";
 import CropPricesPage from "./pages/CropPricesPage";
 import SoilDataPage from "./pages/SoilDataPage";
-import EscalationSystemPage from "./pages/EscalationSystemPage";
+import ProductsPage from "./pages/ProductsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +26,7 @@ const App = () => (
             <Route path="/weather" element={<WeatherPage />} />
             <Route path="/prices" element={<CropPricesPage />} />
             <Route path="/soil" element={<SoilDataPage />} />
-            <Route path="/escalation" element={<EscalationSystemPage />} />
+            <Route path="/products" element={<ProductsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Cloud, TrendingUp, MapPin, MessageSquare, Leaf, Droplets, Sun } from "lucide-react";
+import { Cloud, TrendingUp, MapPin, MessageSquare, Leaf, Droplets, Sun,ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-agriculture.jpg";
 import FloatingIcons from "@/components/animations/FloatingIcons";
+import { useNavigate } from "react-router-dom";
+import { link } from "fs/promises";
 
 const HomePage = () => {
   const features = [
@@ -14,6 +16,9 @@ const HomePage = () => {
       color: "bg-gradient-sky",
       link: "/weather"
     },
+
+
+
     {
       title: "Crop Prices",
       description: "Current market prices and trends for agricultural products",
@@ -34,6 +39,13 @@ const HomePage = () => {
       icon: MessageSquare,
       color: "bg-gradient-primary",
       link: "/escalation"
+    },
+
+    {title: "Marketplace",
+     description: "Buy, sell or lease farming equipment and products",
+        icon: ShoppingCart,
+    color: "bg-gradient-primary",
+    link: "/products"
     },
   ];
 
@@ -92,7 +104,7 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (

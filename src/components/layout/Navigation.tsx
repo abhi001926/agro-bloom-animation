@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Leaf, Cloud, TrendingUp, MapPin, ArrowUp, Menu } from "lucide-react";
+import { Leaf, Cloud, TrendingUp, MapPin, ArrowUp, Menu,ShoppingCart } from "lucide-react";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +14,7 @@ const Navigation = () => {
     { name: "Crop Prices", path: "/prices", icon: TrendingUp },
     { name: "Soil Data", path: "/soil", icon: MapPin },
     { name: "Escalation", path: "/escalation", icon: ArrowUp },
+     { name: "MarketPlace", path: "/Product", icon: ShoppingCart },
   ];
 
   const NavLinks = ({ mobile = false }) => (

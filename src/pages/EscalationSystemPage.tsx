@@ -10,7 +10,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertTriangle, CheckCircle, Clock, MessageSquare, User, Calendar, Filter, Search, Phone, Mail, Send, BarChart3, TrendingUp, Users, AlertCircle, Video, Headphones } from "lucide-react";
 
 // 🔥 Add this at the TOP of your file
-import { doc, updateDoc, collection, onSnapshot,increment } from "firebase/firestore";
+// import { doc, updateDoc, collection, onSnapshot,increment } from "firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  collection,
+  onSnapshot,
+  increment,
+  query,
+  orderBy
+} from "firebase/firestore";
+
+import { blockchainService } from "@/services/blockchainService";
+
+
 
 import { db } from "@/firebase"; // your firebase.js config
 
@@ -119,9 +132,15 @@ const EscalationSystemPage = () => {
     return;
   }
 
-  const unsub = onSnapshot(
-    collection(db, "escalations"),
-    (snapshot) => {
+
+
+const q = query(
+  collection(db, "escalations"),
+  orderBy("timestamp", "desc")   // NEW → latest first
+);
+
+const unsub = onSnapshot(q, (snapshot) => {
+
       if (snapshot.empty) {
         console.log("No Firestore data → using dummy fallback");
         setQueries(dummyQueries);
@@ -237,6 +256,49 @@ const filteredQueries = queries.filter(query => {
 
   // 🔥 Add this at the TOP of your file
 
+// const handleResponse = async (method: string) => {
+//   if (!selectedQuery) {
+//     alert("No query selected.");
+//     return;
+//   }
+
+//   try {
+//     if (method === "call") {
+//       alert(`Initiating call to ${selectedQuery.farmer_name} at ${selectedQuery.farmer_phone}`);
+//       return;
+//     }
+
+//     if (method === "video") {
+//       alert(`Starting video consultation with ${selectedQuery.farmer_name}`);
+//       return;
+//     }
+
+//     // ---------- MESSAGE RESPONSE ----------
+//     if (!responseText.trim()) {
+//       alert("Reply cannot be empty");
+//       return;
+//     }
+
+//     // Firestore document reference
+//     const queryRef = doc(db, "escalations", selectedQuery.id);
+
+//     // Update the escalation with the response + mark resolved + increment count
+//     await updateDoc(queryRef, {
+//       officer_response: responseText.trim(),
+//       status: "resolved",
+//       resolvedAt: new Date(),
+//       resolvedCount: increment(1),
+//     });
+
+//     alert(`Message sent to ${selectedQuery.farmer_name}: ${responseText}`);
+
+//     setResponseText("");
+//   } catch (err) {
+//     console.error("ERROR:", err);
+//     alert("Error sending response. Try again.");
+//   }
+// };
+
 const handleResponse = async (method: string) => {
   if (!selectedQuery) {
     alert("No query selected.");
@@ -260,27 +322,108 @@ const handleResponse = async (method: string) => {
       return;
     }
 
-    // Firestore document reference
+    console.log("Processing response...");
+
+    // Step 1: Try to record on Blockchain (skip if escalation doesn't exist)
+    let blockchainTxHash = null;
+    let blockchainVerified = false;
+
+    try {
+      console.log("🔗 Attempting blockchain recording...");
+
+      // First, check if escalation exists on blockchain
+      const escalationData = await blockchainService.getEscalationData(selectedQuery.id);
+
+      if (escalationData) {
+        // Escalation exists on blockchain, record officer response
+        const blockchainResult = await blockchainService.recordOfficerAction(
+          selectedQuery.id,
+          "OFFICER_001",
+          responseText.trim(),
+          "RESOLVED"
+        );
+
+        if (blockchainResult.success) {
+          blockchainTxHash = blockchainResult.txHash;
+          blockchainVerified = true;
+          console.log("✅ Blockchain recording successful:", blockchainTxHash);
+        }
+      } else {
+        // Escalation doesn't exist on blockchain yet - create it first
+        console.log("⚠️ Escalation not on blockchain, creating it first...");
+
+        const createResult = await blockchainService.recordEscalation(
+          selectedQuery.id,
+          selectedQuery.userId || "UNKNOWN",
+          selectedQuery.farmerName || "Unknown Farmer",
+          selectedQuery.query || "No query text"
+        );
+
+        if (createResult.success) {
+          console.log("✅ Escalation created on blockchain");
+
+          // Now record the officer response
+          const responseResult = await blockchainService.recordOfficerAction(
+            selectedQuery.id,
+            "OFFICER_001",
+            responseText.trim(),
+            "RESOLVED"
+          );
+
+          if (responseResult.success) {
+            blockchainTxHash = responseResult.txHash;
+            blockchainVerified = true;
+            console.log("✅ Officer response recorded on blockchain");
+          }
+        }
+      }
+    } catch (blockchainError) {
+      console.warn("⚠️ Blockchain recording failed (continuing anyway):", blockchainError);
+      // Continue even if blockchain fails - don't block the response
+    }
+
+    // Step 2: Update Firebase (always happens, regardless of blockchain)
+    console.log("🔥 Updating Firebase...");
     const queryRef = doc(db, "escalations", selectedQuery.id);
 
-    // Update the escalation with the response + mark resolved + increment count
-    await updateDoc(queryRef, {
+    const updateData: any = {
       officer_response: responseText.trim(),
       status: "resolved",
       resolvedAt: new Date(),
       resolvedCount: increment(1),
-    });
+    };
 
-    alert(`Message sent to ${selectedQuery.farmerName}: ${responseText}`);
+    // Add blockchain data if available
+    if (blockchainVerified && blockchainTxHash) {
+      updateData.blockchain_tx_hash = blockchainTxHash;
+      updateData.blockchain_verified = true;
+      updateData.blockchain_explorer_url = blockchainService.getExplorerUrl(blockchainTxHash);
+    }
+
+    await updateDoc(queryRef, updateData);
+
+    // Success message
+    const message = blockchainVerified
+      ? `✅ Response sent successfully!\n\n` +
+        `📝 Message: ${responseText.substring(0, 50)}...\n` +
+        `🔗 Blockchain TX: ${blockchainTxHash?.substring(0, 10)}...\n\n` +
+        `Your action has been permanently recorded on the blockchain.`
+      : `✅ Response sent successfully!\n\n` +
+        `📝 Message: ${responseText.substring(0, 50)}...\n\n` +
+        `Note: Blockchain recording was skipped for this old escalation.`;
+
+    alert(message);
+
+    if (blockchainVerified && blockchainTxHash) {
+      console.log("View on explorer:", blockchainService.getExplorerUrl(blockchainTxHash));
+    }
 
     setResponseText("");
   } catch (err) {
     console.error("ERROR:", err);
-    alert("Error sending response. Try again.");
+    alert("Error sending response. Check console for details.");
   }
 };
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
@@ -479,7 +622,7 @@ const handleResponse = async (method: string) => {
                       <User className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{selectedQuery.farmerName}</h3>
+                      <h3 className="font-semibold text-lg">{selectedQuery.farmer_name}</h3>
                       <p className="text-muted-foreground">{selectedQuery.location}</p>
                     </div>
                   </div>
@@ -488,7 +631,7 @@ const handleResponse = async (method: string) => {
                     <div className="space-y-3">
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone</p>
-                        <p className="font-medium">{selectedQuery.phone}</p>
+                        <p className="font-medium">{selectedQuery.farmer_phone}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wide">Farm Size</p>
@@ -623,7 +766,7 @@ const handleResponse = async (method: string) => {
                           className="w-full h-12 bg-green-600 hover:bg-green-700"
                         >
                           <Phone className="h-4 w-4 mr-2" />
-                          Call {selectedQuery.farmerName}
+                          Call {selectedQuery.farmer_name}
                         </Button>
                       </div>
                     </TabsContent>

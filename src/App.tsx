@@ -10,6 +10,9 @@ import CropPricesPage from "./pages/CropPricesPage";
 import SoilDataPage from "./pages/SoilDataPage";
 import EscalationSystemPage from "./pages/EscalationSystemPage";
 import NotFound from "./pages/NotFound";
+import ProductPage from "./pages/Product";
+
+
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,7 @@ const App = () => (
             <Route path="/soil" element={<SoilDataPage />} />
             <Route path="/escalation" element={<EscalationSystemPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/Product" element={<ProductPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

@@ -1,388 +1,399 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import DataCard from "@/components/ui/data-card";
+import { Badge } from "@/components/ui/badge";
 import FloatingIcons from "@/components/animations/FloatingIcons";
-import { 
-  MapPin, 
-  Droplets, 
-  Thermometer, 
-  Zap, 
-  TestTube, 
+import {
+  MapPin,
   Sprout,
-  AlertCircle,
-  CheckCircle
+  Leaf,
+  TrendingUp,
+  Info,
+  ChevronRight
 } from "lucide-react";
-import { toast } from "sonner";
+
+// Kerala Districts with Soil Data 2025
+const keralaDistrictSoils = [
+  {
+    id: "thiruvananthapuram",
+    district: "Thiruvananthapuram",
+    soilTypes: ["Laterite Soils", "Red Soils"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Laterite soils occur in midlands at 10-100m elevation. Red soils found in southern parts along foot slopes of laterite hills. Both are well-drained with acidic pH (5.2-5.8).",
+    crops: [
+      { name: "Coconut", efficiency: 95, season: "Year-round" },
+      { name: "Rubber", efficiency: 90, season: "Year-round" },
+      { name: "Cashew", efficiency: 88, season: "Year-round" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+      { name: "Pepper", efficiency: 82, season: "June-March" },
+      { name: "Tapioca", efficiency: 80, season: "Apr-May" },
+    ]
+  },
+  {
+    id: "kollam",
+    district: "Kollam",
+    soilTypes: ["Laterite Soils", "Coastal Alluvium"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Predominantly laterite in midlands with coastal alluvium along the coast. Sandy texture near coast, clay-rich laterite inland. Good for plantation crops.",
+    crops: [
+      { name: "Coconut", efficiency: 94, season: "Year-round" },
+      { name: "Cashew", efficiency: 92, season: "Year-round" },
+      { name: "Rubber", efficiency: 88, season: "Year-round" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+      { name: "Pepper", efficiency: 80, season: "June-March" },
+    ]
+  },
+  {
+    id: "pathanamthitta",
+    district: "Pathanamthitta",
+    soilTypes: ["Hill Soils", "Laterite Soils"],
+    primarySoil: "Hill Soils",
+    soilInfo: "Hill soils above 80m elevation with loam to clay loam texture. Reddish brown color with 10-50% gravel. Subject to erosion on steep slopes.",
+    crops: [
+      { name: "Rubber", efficiency: 95, season: "Year-round" },
+      { name: "Pepper", efficiency: 90, season: "June-March" },
+      { name: "Cardamom", efficiency: 85, season: "Aug-Feb" },
+      { name: "Coconut", efficiency: 82, season: "Year-round" },
+      { name: "Pineapple", efficiency: 80, season: "Year-round" },
+    ]
+  },
+  {
+    id: "alappuzha",
+    district: "Alappuzha",
+    soilTypes: ["Kari Soils", "Coastal Alluvium"],
+    primarySoil: "Kari Soils",
+    soilInfo: "Unique Kari soils in marshy areas below sea level. High organic matter (8-10%), extremely acidic (pH 3.5-4.5). Requires special management. Ideal for Pokkali farming.",
+    crops: [
+      { name: "Rice (Pokkali)", efficiency: 92, season: "Jun-Nov" },
+      { name: "Coconut", efficiency: 85, season: "Year-round" },
+      { name: "Fish Farming", efficiency: 90, season: "Dec-May" },
+      { name: "Banana", efficiency: 75, season: "Year-round" },
+    ]
+  },
+  {
+    id: "kottayam",
+    district: "Kottayam",
+    soilTypes: ["Kari Soils", "Laterite Soils", "Hill Soils"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Mixed soil types - Kari soils in lowlands, laterite in midlands, hill soils in eastern highlands. Rubber belt of Kerala with ideal conditions.",
+    crops: [
+      { name: "Rubber", efficiency: 96, season: "Year-round" },
+      { name: "Coconut", efficiency: 88, season: "Year-round" },
+      { name: "Pepper", efficiency: 85, season: "June-March" },
+      { name: "Banana", efficiency: 82, season: "Year-round" },
+      { name: "Rice", efficiency: 78, season: "Jun-Sep" },
+    ]
+  },
+  {
+    id: "idukki",
+    district: "Idukki",
+    soilTypes: ["Forest Soils", "Hill Soils"],
+    primarySoil: "Forest Soils",
+    soilInfo: "Forest soils above 300m elevation with high organic matter (6-8%). Developed under forest cover on crystalline rocks. Cool climate ideal for spices and tea.",
+    crops: [
+      { name: "Cardamom", efficiency: 98, season: "Aug-Feb" },
+      { name: "Tea", efficiency: 95, season: "Year-round" },
+      { name: "Coffee", efficiency: 92, season: "Nov-Feb" },
+      { name: "Pepper", efficiency: 90, season: "June-March" },
+      { name: "Vegetables", efficiency: 88, season: "Year-round" },
+    ]
+  },
+  {
+    id: "ernakulam",
+    district: "Ernakulam",
+    soilTypes: ["Coastal Alluvium", "Acid Saline Soils", "Laterite Soils"],
+    primarySoil: "Coastal Alluvium",
+    soilInfo: "Coastal alluvium along backwaters with sandy texture. Acid saline soils in tidal areas. High water table. Suitable for coconut and rice.",
+    crops: [
+      { name: "Coconut", efficiency: 92, season: "Year-round" },
+      { name: "Rice", efficiency: 88, season: "Jun-Sep, Oct-Jan" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+      { name: "Vegetables", efficiency: 82, season: "Oct-Mar" },
+      { name: "Nutmeg", efficiency: 78, season: "Year-round" },
+    ]
+  },
+  {
+    id: "thrissur",
+    district: "Thrissur",
+    soilTypes: ["Mixed Alluvium", "Laterite Soils", "Acid Saline Soils"],
+    primarySoil: "Mixed Alluvium",
+    soilInfo: "Kole lands with mixed alluvium - frequently flooded. Sandy clay loam to clay texture. Famous for rice cultivation in reclaimed wetlands.",
+    crops: [
+      { name: "Rice (Kole)", efficiency: 95, season: "Sep-Mar" },
+      { name: "Coconut", efficiency: 90, season: "Year-round" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+      { name: "Vegetables", efficiency: 88, season: "Mar-May" },
+      { name: "Watermelon", efficiency: 82, season: "Jan-Apr" },
+    ]
+  },
+  {
+    id: "palakkad",
+    district: "Palakkad",
+    soilTypes: ["Black Cotton Soils", "Laterite Soils", "Mixed Alluvium"],
+    primarySoil: "Black Cotton Soils",
+    soilInfo: "Unique black cotton soils in Chittur taluk - calcareous, pH 7.2-7.5. High shrink-swell capacity. Rice bowl of Kerala with fertile alluvial plains.",
+    crops: [
+      { name: "Rice", efficiency: 96, season: "Jun-Sep, Oct-Feb" },
+      { name: "Sugarcane", efficiency: 90, season: "Jan-Dec" },
+      { name: "Cotton", efficiency: 85, season: "Jun-Nov" },
+      { name: "Groundnut", efficiency: 88, season: "Jun-Sep" },
+      { name: "Vegetables", efficiency: 85, season: "Oct-Mar" },
+    ]
+  },
+  {
+    id: "malappuram",
+    district: "Malappuram",
+    soilTypes: ["Laterite Soils", "Hill Soils"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Laterite soils in midlands with good drainage. Hill soils in Nilambur region. Suitable for rubber and spice cultivation.",
+    crops: [
+      { name: "Rubber", efficiency: 92, season: "Year-round" },
+      { name: "Coconut", efficiency: 90, season: "Year-round" },
+      { name: "Arecanut", efficiency: 88, season: "Year-round" },
+      { name: "Pepper", efficiency: 85, season: "June-March" },
+      { name: "Banana", efficiency: 82, season: "Year-round" },
+    ]
+  },
+  {
+    id: "kozhikode",
+    district: "Kozhikode",
+    soilTypes: ["Laterite Soils", "Coastal Alluvium"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Laterite dominant with coastal alluvium along beaches. Well-drained acidic soils ideal for coconut gardens and spice cultivation.",
+    crops: [
+      { name: "Coconut", efficiency: 94, season: "Year-round" },
+      { name: "Arecanut", efficiency: 90, season: "Year-round" },
+      { name: "Pepper", efficiency: 88, season: "June-March" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+      { name: "Rubber", efficiency: 80, season: "Year-round" },
+    ]
+  },
+  {
+    id: "wayanad",
+    district: "Wayanad",
+    soilTypes: ["Forest Soils", "Hill Soils"],
+    primarySoil: "Forest Soils",
+    soilInfo: "High altitude forest soils (700-2100m) with excellent organic matter. Cool climate with high rainfall. Premier coffee and spice growing region.",
+    crops: [
+      { name: "Coffee", efficiency: 98, season: "Nov-Feb" },
+      { name: "Pepper", efficiency: 95, season: "June-March" },
+      { name: "Cardamom", efficiency: 92, season: "Aug-Feb" },
+      { name: "Ginger", efficiency: 90, season: "Mar-Dec" },
+      { name: "Banana", efficiency: 85, season: "Year-round" },
+    ]
+  },
+  {
+    id: "kannur",
+    district: "Kannur",
+    soilTypes: ["Laterite Soils", "Coastal Alluvium", "Acid Saline Soils"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Laterite soils with characteristic red color. Coastal alluvium near beaches. Known for cashew and coconut plantations.",
+    crops: [
+      { name: "Coconut", efficiency: 94, season: "Year-round" },
+      { name: "Cashew", efficiency: 92, season: "Year-round" },
+      { name: "Arecanut", efficiency: 88, season: "Year-round" },
+      { name: "Pepper", efficiency: 85, season: "June-March" },
+      { name: "Rubber", efficiency: 82, season: "Year-round" },
+    ]
+  },
+  {
+    id: "kasaragod",
+    district: "Kasaragod",
+    soilTypes: ["Laterite Soils", "Coastal Alluvium"],
+    primarySoil: "Laterite Soils",
+    soilInfo: "Laterite dominant district with coastal patches. Well-suited for coconut and arecanut. Known as 'Land of Gods' with traditional farming systems.",
+    crops: [
+      { name: "Coconut", efficiency: 96, season: "Year-round" },
+      { name: "Arecanut", efficiency: 94, season: "Year-round" },
+      { name: "Cashew", efficiency: 88, season: "Year-round" },
+      { name: "Pepper", efficiency: 85, season: "June-March" },
+      { name: "Rubber", efficiency: 80, season: "Year-round" },
+    ]
+  }
+];
+
+const getEfficiencyColor = (efficiency: number) => {
+  if (efficiency >= 90) return "bg-green-500";
+  if (efficiency >= 80) return "bg-emerald-500";
+  if (efficiency >= 70) return "bg-yellow-500";
+  return "bg-orange-500";
+};
+
+const getEfficiencyLabel = (efficiency: number) => {
+  if (efficiency >= 90) return "Excellent";
+  if (efficiency >= 80) return "Very Good";
+  if (efficiency >= 70) return "Good";
+  return "Moderate";
+};
 
 const SoilDataPage = () => {
-  const [selectedField, setSelectedField] = useState("thiruvananthapuram");
-
-  // Real Kerala soil data based on districts and soil types
-  const keralaSoilDatabase = {
-    thiruvananthapuram: {
-      location: "Thiruvananthapuram District (Laterite Soil)",
-      district: "Thiruvananthapuram",
-      soilType: "Laterite",
-      moisture: 72,
-      temperature: 28,
-      ph: 5.2, // Typical laterite soil pH in Kerala
-      nitrogen: 38, // Low due to laterite characteristics
-      phosphorus: 28, // Low to moderate
-      potassium: 42, // Moderate
-      organicMatter: 2.8,
-      conductivity: 0.8,
-      elevation: "50m MSL",
-      rainfall: "1800mm/year",
-      majorCrops: ["Coconut", "Rubber", "Cashew"],
-      lastUpdated: "1 hour ago"
-    },
-    ernakulam: {
-      location: "Ernakulam District (Coastal Alluvium)",
-      district: "Ernakulam",
-      soilType: "Coastal Alluvium",
-      moisture: 85,
-      temperature: 26,
-      ph: 6.1, // Better pH for alluvial soils
-      nitrogen: 52,
-      phosphorus: 45,
-      potassium: 68,
-      organicMatter: 4.2,
-      conductivity: 1.2,
-      elevation: "3m MSL",
-      rainfall: "2400mm/year",
-      majorCrops: ["Rice", "Coconut", "Vegetables"],
-      lastUpdated: "45 mins ago"
-    },
-    wayanad: {
-      location: "Wayanad District (Hill Soil)",
-      district: "Wayanad",
-      soilType: "Hill Soil (Forest)",
-      moisture: 78,
-      temperature: 22,
-      ph: 5.8,
-      nitrogen: 65, // Higher due to forest soil
-      phosphorus: 58,
-      potassium: 72,
-      organicMatter: 6.5,
-      conductivity: 0.6,
-      elevation: "800m MSL",
-      rainfall: "3500mm/year",
-      majorCrops: ["Coffee", "Pepper", "Cardamom"],
-      lastUpdated: "2 hours ago"
-    },
-    alappuzha: {
-      location: "Alappuzha District (Kari Soil)",
-      district: "Alappuzha",
-      soilType: "Kari (Organic Clay)",
-      moisture: 95,
-      temperature: 27,
-      ph: 4.8, // Acidic kari soil
-      nitrogen: 48,
-      phosphorus: 35,
-      potassium: 55,
-      organicMatter: 8.2,
-      conductivity: 2.1,
-      elevation: "1m MSL",
-      rainfall: "2100mm/year",
-      majorCrops: ["Rice", "Coconut", "Fish farming"],
-      lastUpdated: "30 mins ago"
-    },
-    palakkad: {
-      location: "Palakkad District (Black Cotton Soil)",
-      district: "Palakkad",
-      soilType: "Black Cotton",
-      moisture: 62,
-      temperature: 29,
-      ph: 7.2, // Neutral to slightly alkaline
-      nitrogen: 58,
-      phosphorus: 62,
-      potassium: 78,
-      organicMatter: 3.8,
-      conductivity: 1.8,
-      elevation: "100m MSL",
-      rainfall: "1200mm/year",
-      majorCrops: ["Rice", "Sugarcane", "Cotton"],
-      lastUpdated: "1.5 hours ago"
-    }
-  };
-
-  const soilData = keralaSoilDatabase[selectedField as keyof typeof keralaSoilDatabase];
-
-  const getRecommendationsForSoil = (data: typeof soilData) => {
-    const recommendations = [];
-    
-    // pH recommendations based on Kerala soil types
-    if (data.ph < 5.5) {
-      recommendations.push({
-        type: "warning",
-        icon: AlertCircle,
-        title: "Soil Acidity",
-        message: `pH ${data.ph} is acidic. Apply lime to improve pH for better crop growth`,
-        color: "text-orange-600"
-      });
-    } else if (data.ph > 7.5) {
-      recommendations.push({
-        type: "warning",
-        icon: AlertCircle,
-        title: "Soil Alkalinity",
-        message: `pH ${data.ph} is alkaline. Consider organic matter addition`,
-        color: "text-orange-600"
-      });
-    } else {
-      recommendations.push({
-        type: "optimal",
-        icon: CheckCircle,
-        title: "pH Balance",
-        message: "pH levels are suitable for most crops",
-        color: "text-green-600"
-      });
-    }
-
-    // Nitrogen recommendations
-    if (data.nitrogen < 40) {
-      recommendations.push({
-        type: "warning",
-        icon: AlertCircle,
-        title: "Nitrogen Deficiency",
-        message: "Apply organic fertilizers or green manure to boost nitrogen",
-        color: "text-red-600"
-      });
-    } else if (data.nitrogen > 60) {
-      recommendations.push({
-        type: "optimal",
-        icon: CheckCircle,
-        title: "Good Nitrogen Levels",
-        message: "Nitrogen content is adequate for healthy crop growth",
-        color: "text-green-600"
-      });
-    } else {
-      recommendations.push({
-        type: "moderate",
-        icon: AlertCircle,
-        title: "Moderate Nitrogen",
-        message: "Consider supplemental nitrogen application during peak growth",
-        color: "text-blue-600"
-      });
-    }
-
-    // Moisture recommendations based on Kerala climate
-    if (data.moisture > 90) {
-      recommendations.push({
-        type: "warning",
-        icon: AlertCircle,
-        title: "High Moisture Content",
-        message: "Ensure proper drainage to prevent waterlogging",
-        color: "text-blue-600"
-      });
-    } else if (data.moisture < 50) {
-      recommendations.push({
-        type: "warning",
-        icon: AlertCircle,
-        title: "Low Moisture",
-        message: "Increase irrigation frequency during dry periods",
-        color: "text-red-600"
-      });
-    } else {
-      recommendations.push({
-        type: "optimal",
-        icon: CheckCircle,
-        title: "Optimal Moisture",
-        message: "Soil moisture is ideal for current weather conditions",
-        color: "text-green-600"
-      });
-    }
-
-    return recommendations;
-  };
-
-  const recommendations = getRecommendationsForSoil(soilData);
-
-  const fields = [
-    { id: "thiruvananthapuram", name: "Thiruvananthapuram (Laterite)" },
-    { id: "ernakulam", name: "Ernakulam (Coastal Alluvium)" },
-    { id: "wayanad", name: "Wayanad (Hill Soil)" },
-    { id: "alappuzha", name: "Alappuzha (Kari Soil)" },
-    { id: "palakkad", name: "Palakkad (Black Cotton)" }
-  ];
-
-  const handleFieldChange = (fieldId: string) => {
-    setSelectedField(fieldId);
-    toast.success("Field data updated successfully!");
-  };
-
-  const getNutrientStatus = (value: number) => {
-    if (value > 60) return { status: "High", color: "text-green-600" };
-    if (value > 30) return { status: "Moderate", color: "text-blue-600" };
-    return { status: "Low", color: "text-red-600" };
-  };
+  const [selectedDistrict, setSelectedDistrict] = useState(keralaDistrictSoils[0]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-green-50 relative overflow-hidden">
       <FloatingIcons />
-      
+
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="animate-slide-up">
-          <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent drop-shadow-sm">
-            Kerala Soil Data Monitoring
-          </h1>
-          <p className="text-center text-gray-700 mb-8 max-w-2xl mx-auto text-lg">
-            Real-time soil analysis across Kerala districts featuring authentic data from laterite, alluvial, and hill soils
-          </p>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-amber-600 via-green-600 to-emerald-600 bg-clip-text text-transparent">
+              Kerala Soils & Crop Guide 2025
+            </h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Select a district to view soil types and recommended crops with efficiency ratings
+            </p>
+          </div>
 
-          <Card className="mb-8 shadow-xl bg-white/95 backdrop-blur-sm border-0 ring-1 ring-gray-200/50">
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-white">
+          {/* District Selection */}
+          <Card className="mb-6 shadow-lg bg-white/95 border-0">
+            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg py-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <MapPin className="h-5 w-5" />
-                Kerala District Soil Monitoring
+                Select District
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3 mb-4">
-                {fields.map((field) => (
+            <CardContent className="p-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2">
+                {keralaDistrictSoils.map((district) => (
                   <Button
-                    key={field.id}
-                    variant={selectedField === field.id ? "default" : "outline"}
-                    onClick={() => handleFieldChange(field.id)}
-                    className={`transition-all duration-300 font-medium ${
-                      selectedField === field.id 
-                        ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 border-0" 
-                        : "bg-white hover:bg-blue-50 border-2 border-blue-200/70 text-blue-700 hover:border-blue-400 hover:text-blue-800"
+                    key={district.id}
+                    variant={selectedDistrict.id === district.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedDistrict(district)}
+                    className={`text-xs h-auto py-2 transition-all ${
+                      selectedDistrict.id === district.id
+                        ? "bg-green-600 hover:bg-green-700 text-white shadow-md"
+                        : "hover:bg-green-50 hover:border-green-400"
                     }`}
                   >
-                    {field.name}
+                    {district.district}
                   </Button>
                 ))}
               </div>
-              
-              {/* Soil Information Panel */}
-              <div className="grid md:grid-cols-2 gap-4 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200/30">
-                <div className="space-y-3">
-                  <div className="text-sm text-blue-600">District: <span className="font-semibold text-gray-800">{soilData.district}</span></div>
-                  <div className="text-sm text-blue-600">Soil Type: <span className="font-semibold text-gray-800">{soilData.soilType}</span></div>
-                  <div className="text-sm text-blue-600">Elevation: <span className="font-semibold text-gray-800">{soilData.elevation}</span></div>
-                </div>
-                <div className="space-y-3">
-                  <div className="text-sm text-green-600">Annual Rainfall: <span className="font-semibold text-gray-800">{soilData.rainfall}</span></div>
-                  <div className="text-sm text-green-600">Major Crops: <span className="font-semibold text-gray-800">{soilData.majorCrops.join(", ")}</span></div>
-                  <div className="text-sm text-purple-600">Last Updated: <span className="font-semibold text-gray-800">{soilData.lastUpdated}</span></div>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <DataCard
-              title="Soil Moisture"
-              value={soilData.moisture}
-              unit="%"
-              icon={Droplets}
-              variant="soil"
-              description={
-                soilData.moisture > 90 ? "Very High - Monitor drainage" :
-                soilData.moisture > 70 ? "Optimal for Kerala climate" :
-                soilData.moisture > 50 ? "Moderate - May need irrigation" :
-                "Low - Requires immediate irrigation"
-              }
-            />
-            <DataCard
-              title="Temperature"
-              value={soilData.temperature}
-              unit="°C"
-              icon={Thermometer}
-              variant="soil"
-              description={
-                soilData.temperature > 30 ? "High - Suitable for tropical crops" :
-                soilData.temperature > 25 ? "Optimal for Kerala agriculture" :
-                "Cool - Ideal for hill station crops"
-              }
-            />
-            <DataCard
-              title="pH Level"
-              value={soilData.ph}
-              icon={TestTube}
-              variant="soil"
-              description={
-                soilData.ph < 5.5 ? "Acidic - Common in laterite soils" :
-                soilData.ph > 7.5 ? "Alkaline - Rare in Kerala" :
-                "Balanced - Good for most crops"
-              }
-            />
-            <DataCard
-              title="Conductivity"
-              value={soilData.conductivity}
-              unit="dS/m"
-              icon={Zap}
-              variant="soil"
-              description={
-                soilData.conductivity > 2.0 ? "High salinity - Near coastal areas" :
-                soilData.conductivity > 1.0 ? "Moderate salinity" :
-                "Low salinity - Ideal conditions"
-              }
-            />
+          {/* Selected District Info */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Soil Information */}
+            <Card className="lg:col-span-1 shadow-lg bg-white border-0">
+              <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Info className="h-5 w-5" />
+                  {selectedDistrict.district} Soil Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {/* Primary Soil */}
+                <div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">Primary Soil Type</span>
+                  <p className="font-bold text-lg text-amber-700">{selectedDistrict.primarySoil}</p>
+                </div>
+
+                {/* All Soil Types */}
+                <div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">All Soil Types</span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedDistrict.soilTypes.map((soil) => (
+                      <Badge key={soil} variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
+                        {soil}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Soil Description */}
+                <div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">About the Soil</span>
+                  <p className="text-gray-700 text-sm mt-1 leading-relaxed">{selectedDistrict.soilInfo}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Crop Recommendations */}
+            <Card className="lg:col-span-2 shadow-lg bg-white border-0">
+              <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sprout className="h-5 w-5" />
+                  Recommended Crops for {selectedDistrict.district}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {selectedDistrict.crops.map((crop, index) => (
+                    <div
+                      key={crop.name}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 hover:shadow-md transition-all animate-slide-up"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <div className="bg-green-100 p-3 rounded-full">
+                        <Leaf className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-gray-800">{crop.name}</span>
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <span className={`text-sm font-bold ${crop.efficiency >= 90 ? 'text-green-600' : crop.efficiency >= 80 ? 'text-emerald-600' : 'text-yellow-600'}`}>
+                              {crop.efficiency}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-500">{crop.season}</span>
+                          <Badge
+                            className={`${getEfficiencyColor(crop.efficiency)} text-white text-xs`}
+                          >
+                            {getEfficiencyLabel(crop.efficiency)}
+                          </Badge>
+                        </div>
+                        {/* Efficiency Bar */}
+                        <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${getEfficiencyColor(crop.efficiency)} transition-all duration-500`}
+                            style={{ width: `${crop.efficiency}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Nutrient Levels */}
-          <Card className="mb-8 shadow-xl bg-white border-0 ring-1 ring-gray-200/50">
-            <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Sprout className="h-5 w-5" />
-                Nutrient Levels
-              </CardTitle>
+          {/* Quick Reference */}
+          <Card className="mt-6 shadow-lg bg-white border-0">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-t-lg py-3">
+              <CardTitle className="text-lg">Efficiency Rating Guide</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {[
-                  { name: "Nitrogen (N)", value: soilData.nitrogen, color: "from-blue-500 to-blue-600" },
-                  { name: "Phosphorus (P)", value: soilData.phosphorus, color: "from-orange-500 to-red-500" },
-                  { name: "Potassium (K)", value: soilData.potassium, color: "from-green-500 to-green-600" }
-                ].map((nutrient, index) => {
-                  const status = getNutrientStatus(nutrient.value);
-                  return (
-                    <div key={nutrient.name} className="animate-slide-up bg-gradient-to-r from-gray-50 to-white p-4 rounded-lg border border-gray-200/50" style={{ animationDelay: `${index * 0.1}s` }}>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-gray-700">{nutrient.name}</span>
-                        <span className={`font-bold ${status.color} text-sm px-3 py-1 rounded-full bg-white shadow-sm`}>
-                          {nutrient.value}% - {status.status}
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <Progress value={nutrient.value} className="h-4" />
-                        <div className={`absolute top-0 left-0 h-4 bg-gradient-to-r ${nutrient.color} rounded-full transition-all duration-500`} 
-                             style={{ width: `${nutrient.value}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 justify-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-500" />
+                  <span className="text-sm text-gray-700">90-100%: Excellent</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-emerald-500" />
+                  <span className="text-sm text-gray-700">80-89%: Very Good</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-yellow-500" />
+                  <span className="text-sm text-gray-700">70-79%: Good</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-orange-500" />
+                  <span className="text-sm text-gray-700">Below 70%: Moderate</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recommendations */}
-          <Card className="shadow-xl bg-white border-0 ring-1 ring-gray-200/50">
-            <CardHeader className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-t-lg">
-              <CardTitle className="text-white">Soil Health Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recommendations.map((rec, index) => {
-                  const Icon = rec.icon;
-                  return (
-                    <div key={index} className="flex items-start gap-4 p-5 rounded-lg bg-gradient-to-r from-white to-gray-50 border border-gray-200/60 animate-slide-up shadow-sm hover:shadow-md transition-all duration-300"
-                         style={{ animationDelay: `${index * 0.1}s` }}>
-                      <Icon className={`h-6 w-6 mt-0.5 ${rec.color}`} />
-                      <div>
-                        <div className="font-semibold text-gray-800">{rec.title}</div>
-                        <div className="text-sm text-gray-600 mt-1">{rec.message}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Source */}
+          {/* <p className="text-center text-sm text-gray-500 mt-6">
+            Data: Kerala State Land Use Board & Kerala Agricultural University (2025)
+          </p> */}
         </div>
       </div>
     </div>

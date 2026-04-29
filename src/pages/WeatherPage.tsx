@@ -37,6 +37,18 @@ const WeatherPage = () => {
   const [hourlyData, setHourlyData] = useState<any[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+// 🔹 Fetch current weather (real-time) for exact small location
+const fetchCurrentWeather = async (loc: string) => {
+  const res = await fetch(
+    `https://api.tomorrow.io/v4/weather/realtime?location=${loc}&apikey=${API_KEY}`
+  );
+  const data = await res.json();
+  return data?.data?.values || null;
+};
+
+
+
+
   // 🔹 Fetch weather data (daily + hourly)
   const fetchWeather = async (loc: string) => {
     setLoading(true);
@@ -47,19 +59,39 @@ const WeatherPage = () => {
       const data = await response.json();
 
       if (data?.timelines?.daily && data?.timelines?.hourly) {
-        const today = data.timelines.daily[0].values;
-        const todayCondition = getConditionAndIcon(
-          data.timelines.daily[0].values.weatherCodeMax
-        );
+        // ⭐ Get REALTIME temperature + conditions
+const current = await fetchCurrentWeather(loc);
 
-        setWeatherData({
-          location: loc,
-          temperature: Math.round(today.temperatureAvg),
-          condition: todayCondition.condition,
-          humidity: Math.round(today.humidityAvg),
-          windSpeed: Math.round(today.windSpeedAvg),
-          visibility: Math.round(today.visibilityAvg),
-          uvIndex: today.uvIndexMax,
+const today = data.timelines.daily[0].values;
+const currentCondition = getConditionAndIcon(current.weatherCode);
+
+// Replace avg with REAL current values
+setWeatherData({
+  location: loc,
+  temperature: Math.round(current.temperature), // 🔥 LIVE TEMPERATURE
+  condition: currentCondition.condition,        // 🔥 LIVE CONDITION
+  humidity: Math.round(current.humidity),
+  windSpeed: Math.round(current.windSpeed),
+  visibility: Math.round(current.visibility),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  uvIndex: current.uvIndex,
+
           forecast: data.timelines.daily.slice(0, 5).map((day: any, i: number) => {
             const mapped = getConditionAndIcon(day.values.weatherCodeMax);
             return {
